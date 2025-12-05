@@ -1,0 +1,28 @@
+name: mypackage
+version: "1.0.0"
+description: "package description"
+
+source:
+  !Git
+  repo: "https://github.com/user/mypackage.git"
+  tag: "v1.0.0"
+  branch: "main"
+
+dependencies:
+  runtime:
+    - name: serde
+      version_req: ">=1.0"
+    - name: tokio
+      version_req: "1.25"
+  build:
+    - name: cmake
+      version_req: null
+    - name: make
+      version_req: ">=4.0"
+
+build:
+  steps:
+    - "./configure --prefix=/usr/local"
+    - "make -j$(nproc)"
+    - "make install"
+
