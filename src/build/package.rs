@@ -13,7 +13,7 @@ pub struct Package {
 
 // TODO
 // support other sources
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Source {
     Git {
         repo: String,
