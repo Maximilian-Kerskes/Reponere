@@ -1,12 +1,12 @@
-use std::path::Path;
+use std::{path::Path, vec};
 
-#[derive(Debug)]
 pub enum PackageManagerError {
     UnknownManager,
     FailedInstall,
+    FailedUninstall,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 pub enum ManagerKind {
     Pacman,
     Apt,
@@ -16,21 +16,28 @@ pub enum ManagerKind {
 pub struct PackageManager {
     pub kind: ManagerKind,
     sudo: bool,
-    default_flags: Vec<&'static str>,
+    default_install_flags: Vec<&'static str>,
+    default_uninstall_flags: Vec<&'static str>,
 }
 
 impl PackageManager {
     fn new(kind: ManagerKind, sudo: bool) -> Self {
-        let default_flags = match kind {
+        let default_install_flags = match kind {
             ManagerKind::Pacman => vec!["-S", "--noconfirm"],
             ManagerKind::Apt => vec!["install", "-y"],
             ManagerKind::Dnf => vec!["install", "-y"],
+        };
+        let default_uninstall_flags = match kind {
+            ManagerKind::Pacman => vec!["-R", "--noconfirm"],
+            ManagerKind::Apt => vec!["uninstall", "-y"],
+            ManagerKind::Dnf => vec!["uninstall", "-y"],
         };
 
         PackageManager {
             kind,
             sudo,
-            default_flags,
+            default_install_flags,
+            default_uninstall_flags,
         }
     }
 
@@ -50,18 +57,42 @@ impl PackageManager {
         if self.sudo { vec!["sudo"] } else { vec![] }
     }
 
-    pub fn install(&mut self, package: &str) -> Result<(), PackageManagerError> {
+    fn manager_string(&self) -> &'static str {
+        match self.kind {
+            ManagerKind::Pacman => "pacman",
+            ManagerKind::Apt => "apt",
+            ManagerKind::Dnf => "dnf",
+        }
+    }
+
+    pub fn install(&self, package: &str) -> Result<(), PackageManagerError> {
         let mut cmd = self.command_prefix();
-        let (binary, flags) = match self.kind {
-            ManagerKind::Pacman => ("pacman", &self.default_flags),
-            ManagerKind::Apt => ("apt", &self.default_flags),
-            ManagerKind::Dnf => ("dnf", &self.default_flags),
-        };
-        cmd.push(binary);
-        cmd.extend(flags.iter().copied());
+        cmd.push(self.manager_string());
+        cmd.extend(self.default_install_flags.iter().copied());
         cmd.push(package);
 
-        println!("Running: {:?}", cmd);
+        println!("Running: {cmd:?}");
+        let output = std::process::Command::new(cmd[0])
+            .args(&cmd[1..])
+            .output()
+            .map_err(|_| PackageManagerError::FailedInstall)?;
+        println!("{}", String::from_utf8_lossy(&output.stdout));
+        println!("{}", String::from_utf8_lossy(&output.stderr));
+
+        if !output.status.success() {
+            return Err(PackageManagerError::FailedInstall);
+        }
+
+        Ok(())
+    }
+
+    pub fn uninstall(&self, package: &str) -> Result<(), PackageManagerError> {
+        let mut cmd = self.command_prefix();
+        cmd.push(self.manager_string());
+        cmd.extend(self.default_uninstall_flags.iter().copied());
+        cmd.push(package);
+
+        println!("Running: {cmd:?}");
         let output = std::process::Command::new(cmd[0])
             .args(&cmd[1..])
             .output()
@@ -83,26 +114,47 @@ mod tests {
 
     #[test]
     pub fn test_get_package_manager() {
-        let manager = PackageManager::get_package_manager(true).unwrap();
-        // depends on where its being build
-        assert_eq!(manager.kind, ManagerKind::Apt);
+        let manager_result = PackageManager::get_package_manager(true);
+        match manager_result {
+            Ok(m) => {
+                assert!(matches!(
+                    m.kind,
+                    ManagerKind::Pacman | ManagerKind::Apt | ManagerKind::Dnf
+                ));
+            }
+            Err(PackageManagerError::UnknownManager) => {
+                panic!("No supported package manager found on this system.");
+            }
+            Err(e) => panic!("Unexpected error: {e:?}"),
+        }
     }
 
     #[test]
-    pub fn test_install() {
-        let mut manager = PackageManager::get_package_manager(true).unwrap();
+    pub fn test_install_and_uninstall() {
+        let manager = PackageManager::get_package_manager(true).unwrap();
 
-        let result = manager.install("cmake");
+        let result = manager.install("minicom");
         assert!(
             result.is_ok(),
-            "Expected install to succeed, got {:?}",
-            result
+            "Expected install to succeed, got {result:?}",
         );
 
         let result = manager.install("asfd");
         assert!(
             result.is_err(),
-            "Expected install to fail, got {:?}",
+            "Expected install to fail, got {result:?}",
+        );
+
+        let result = manager.uninstall("minicom");
+        assert!(
+            result.is_ok(),
+            "Expected uninstall to succeed, got {result:?}"
+        );
+
+        let result = manager.uninstall("asfd");
+        assert!(
+            result.is_err(),
+            "Expected uninstall to fail, got {:?}",
             result
         );
     }
