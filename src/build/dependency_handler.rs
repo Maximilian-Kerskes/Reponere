@@ -16,7 +16,8 @@ impl DependencyHandler {
 
     pub fn install_dependencies(&self) {
         for dependency in &self.dependencies.build {
-
+            let mut dep_name = dependency.name.clone();
+            dep_name.push_str("-build");
             self.package_manager.install(&dependency.name);
         }
     }

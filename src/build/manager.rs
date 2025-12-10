@@ -1,10 +1,45 @@
 use std::{path::Path, vec};
 
+#[derive(Debug)]
 pub enum PackageManagerError {
     UnknownManager,
     FailedInstall,
     FailedUninstall,
 }
+
+struct BackendConfig {
+    cmd: &'static str,
+    install_flags: &'static [&'static str],
+    uninstall_flags: &'static [&'static str],
+    get_installed_version_flags: &'static [&'static str],
+    get_available_version_flags: &'static [&'static str],
+}
+
+const PACMAN_CONFIG: BackendConfig = BackendConfig {
+    cmd: "pacman",
+    install_flags: &["-S", "--noconfirm"],
+    uninstall_flags: &["-R", "--noconfirm"],
+    get_installed_version_flags: &["-Q"],
+    get_available_version_flags: &["-Si"],
+};
+
+const APT_CONFIG: BackendConfig = BackendConfig {
+    cmd: "apt",
+    install_flags: &["install", "-y"],
+    uninstall_flags: &["uninstall", "-y"],
+    // TODO
+    // check if this is working
+    get_installed_version_flags: &["list", "--installed"],
+    get_available_version_flags: &["list", "--available"],
+};
+
+const DNF_CONFIG: BackendConfig = BackendConfig {
+    cmd: "apt",
+    install_flags: &["install", "-y"],
+    uninstall_flags: &["uninstall", "-y"],
+    get_installed_version_flags: &["list", "installed"],
+    get_available_version_flags: &["list", "available"],
+};
 
 #[derive(PartialEq)]
 pub enum ManagerKind {
@@ -14,31 +49,20 @@ pub enum ManagerKind {
 }
 
 pub struct PackageManager {
-    pub kind: ManagerKind,
+    kind: ManagerKind,
+    config: BackendConfig,
     sudo: bool,
-    default_install_flags: Vec<&'static str>,
-    default_uninstall_flags: Vec<&'static str>,
 }
 
 impl PackageManager {
     fn new(kind: ManagerKind, sudo: bool) -> Self {
-        let default_install_flags = match kind {
-            ManagerKind::Pacman => vec!["-S", "--noconfirm"],
-            ManagerKind::Apt => vec!["install", "-y"],
-            ManagerKind::Dnf => vec!["install", "-y"],
-        };
-        let default_uninstall_flags = match kind {
-            ManagerKind::Pacman => vec!["-R", "--noconfirm"],
-            ManagerKind::Apt => vec!["uninstall", "-y"],
-            ManagerKind::Dnf => vec!["uninstall", "-y"],
+        let config = match kind {
+            ManagerKind::Pacman => PACMAN_CONFIG,
+            ManagerKind::Apt => APT_CONFIG,
+            ManagerKind::Dnf => DNF_CONFIG,
         };
 
-        PackageManager {
-            kind,
-            sudo,
-            default_install_flags,
-            default_uninstall_flags,
-        }
+        PackageManager { kind, config, sudo }
     }
 
     pub fn get_package_manager(sudo: bool) -> Result<PackageManager, PackageManagerError> {
@@ -68,7 +92,7 @@ impl PackageManager {
     pub fn install(&self, package: &str) -> Result<(), PackageManagerError> {
         let mut cmd = self.command_prefix();
         cmd.push(self.manager_string());
-        cmd.extend(self.default_install_flags.iter().copied());
+        cmd.extend(self.config.install_flags.iter().copied());
         cmd.push(package);
 
         println!("Running: {cmd:?}");
@@ -89,7 +113,7 @@ impl PackageManager {
     pub fn uninstall(&self, package: &str) -> Result<(), PackageManagerError> {
         let mut cmd = self.command_prefix();
         cmd.push(self.manager_string());
-        cmd.extend(self.default_uninstall_flags.iter().copied());
+        cmd.extend(self.config.uninstall_flags.iter().copied());
         cmd.push(package);
 
         println!("Running: {cmd:?}");
@@ -140,10 +164,7 @@ mod tests {
         );
 
         let result = manager.install("asfd");
-        assert!(
-            result.is_err(),
-            "Expected install to fail, got {result:?}",
-        );
+        assert!(result.is_err(), "Expected install to fail, got {result:?}",);
 
         let result = manager.uninstall("minicom");
         assert!(

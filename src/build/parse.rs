@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     pub fn test_parse() {
-        let parser = PackageParser::new("./tests/package.yaml");
+        let parser = PackageParser::new("./tests/package_build.yaml");
         let package = parser.parse().unwrap();
         assert_eq!(package.name, "mypackage");
         assert_eq!(package.version, "1.0.0");
