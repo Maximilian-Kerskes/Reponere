@@ -204,8 +204,7 @@ mod tests {
         let result = manager.uninstall("asfd");
         assert!(
             result.is_err(),
-            "Expected uninstall to fail, got {:?}",
-            result
+            "Expected uninstall to fail, got {result:?}",
         );
     }
 
@@ -213,6 +212,9 @@ mod tests {
     pub fn test_get_installed_version() {
         let manager = PackageManager::get_package_manager(true).unwrap();
         let result = manager.get_installed_version("cmake");
-        assert!(result.is_ok(), "Expected get_installed_version to succeed, got {result:?}");
+        assert!(
+            result.is_ok(),
+            "Expected get_installed_version to succeed, got {result:?}"
+        );
     }
 }
