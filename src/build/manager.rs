@@ -1,3 +1,4 @@
+use regex::Regex;
 use std::{path::Path, vec};
 
 #[derive(Debug)]
@@ -5,6 +6,7 @@ pub enum PackageManagerError {
     UnknownManager,
     FailedInstall,
     FailedUninstall,
+    FailedGetVersion,
 }
 
 struct BackendConfig {
@@ -130,6 +132,33 @@ impl PackageManager {
 
         Ok(())
     }
+
+    fn parse_installed_version(&self, input: &str) -> Result<String, PackageManagerError> {
+        let re = Regex::new(r"^\S*(?:\s+(\S+))$").unwrap();
+        input
+            .lines()
+            .find_map(|line| re.captures(line).map(|caps| caps[1].to_string()))
+            .ok_or(PackageManagerError::FailedGetVersion)
+    }
+
+    pub fn get_installed_version(&self, package: &str) -> Result<String, PackageManagerError> {
+        let mut cmd = self.command_prefix();
+        cmd.push(self.manager_string());
+        cmd.extend(self.config.get_installed_version_flags.iter().copied());
+        cmd.push(package);
+
+        let output = std::process::Command::new(cmd[0])
+            .args(&cmd[1..])
+            .output()
+            .map_err(|_| PackageManagerError::FailedInstall)?;
+        let stdout: String = String::from_utf8_lossy(&output.stdout).into();
+
+        let version = self
+            .parse_installed_version(&stdout)
+            .map_err(|_| PackageManagerError::FailedGetVersion)?;
+        println!("{package}: {version}");
+        Ok(version)
+    }
 }
 
 #[cfg(test)]
@@ -178,5 +207,12 @@ mod tests {
             "Expected uninstall to fail, got {:?}",
             result
         );
+    }
+
+    #[test]
+    pub fn test_get_installed_version() {
+        let manager = PackageManager::get_package_manager(true).unwrap();
+        let result = manager.get_installed_version("cmake");
+        assert!(result.is_ok(), "Expected get_installed_version to succeed, got {result:?}");
     }
 }
