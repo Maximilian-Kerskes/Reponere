@@ -1,4 +1,3 @@
-use regex::Regex;
 use std::{path::Path, vec};
 use version_compare::Version;
 
