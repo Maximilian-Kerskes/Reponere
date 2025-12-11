@@ -32,11 +32,11 @@ const APT_CONFIG: BackendConfig = BackendConfig {
     // TODO
     // check if this is working
     get_installed_version_flags: &["list", "--installed"],
-    get_available_version_flags: &["list", "--available"],
+    get_available_version_flags: &["list"],
 };
 
 const DNF_CONFIG: BackendConfig = BackendConfig {
-    cmd: "apt",
+    cmd: "dnf",
     install_flags: &["install", "-y"],
     uninstall_flags: &["uninstall", "-y"],
     get_installed_version_flags: &["list", "installed"],
@@ -161,6 +161,27 @@ impl PackageManager {
             .map_err(|_| PackageManagerError::FailedGetVersion)?;
         Ok(version)
     }
+
+    pub fn get_available_version(&self, package: &str) -> Result<String, PackageManagerError> {
+        let mut cmd = self.command_prefix();
+        cmd.push(self.manager_string());
+        cmd.extend(self.config.get_available_version_flags.iter().copied());
+        cmd.push(package);
+
+        println!("Running: {cmd:?}");
+        let output = std::process::Command::new(cmd[0])
+            .args(&cmd[1..])
+            .output()
+            .map_err(|_| PackageManagerError::FailedInstall)?;
+        let stdout: String = String::from_utf8_lossy(&output.stdout).into();
+        println!("{}", stdout);
+        println!("{}", String::from_utf8_lossy(&output.stderr));
+
+        let version = self
+            .parse_installed_version(&stdout)
+            .map_err(|_| PackageManagerError::FailedGetVersion)?;
+        Ok(version)
+    }
 }
 
 #[cfg(test)]
@@ -217,6 +238,26 @@ mod tests {
         assert!(
             result.is_ok(),
             "Expected get_installed_version to succeed, got {result:?}"
+        );
+        let result = manager.get_installed_version("htop");
+        assert!(
+            result.is_err(),
+            "Expected get_installed_version to fail, got {result:?}"
+        );
+    }
+
+    #[test]
+    pub fn test_get_available_version() {
+        let manager = PackageManager::get_package_manager(true).unwrap();
+        let result = manager.get_available_version("gnome-menus");
+        assert!(
+            result.is_ok(),
+            "Expected get_installed_version to succeed, got {result:?}"
+        );
+        let result = manager.get_available_version("asfd");
+        assert!(
+            result.is_err(),
+            "Expected get_installed_version to fail, got {result:?}"
         );
     }
 }
