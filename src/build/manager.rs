@@ -1,5 +1,6 @@
 use regex::Regex;
 use std::{path::Path, vec};
+use version_compare::Version;
 
 #[derive(Debug)]
 pub enum PackageManagerError {
@@ -28,7 +29,7 @@ const PACMAN_CONFIG: BackendConfig = BackendConfig {
 const APT_CONFIG: BackendConfig = BackendConfig {
     cmd: "apt",
     install_flags: &["install", "-y"],
-    uninstall_flags: &["uninstall", "-y"],
+    uninstall_flags: &["remove", "-y"],
     // TODO
     // check if this is working
     get_installed_version_flags: &["list", "--installed"],
@@ -134,10 +135,10 @@ impl PackageManager {
     }
 
     fn parse_installed_version(&self, input: &str) -> Result<String, PackageManagerError> {
-        let re = Regex::new(r"^\S*(?:\s+(\S+))$").unwrap();
         input
-            .lines()
-            .find_map(|line| re.captures(line).map(|caps| caps[1].to_string()))
+            .split_whitespace()
+            .find(|word| Version::from(word).is_some())
+            .map(|s| s.to_string())
             .ok_or(PackageManagerError::FailedGetVersion)
     }
 
@@ -147,16 +148,18 @@ impl PackageManager {
         cmd.extend(self.config.get_installed_version_flags.iter().copied());
         cmd.push(package);
 
+        println!("Running: {cmd:?}");
         let output = std::process::Command::new(cmd[0])
             .args(&cmd[1..])
             .output()
             .map_err(|_| PackageManagerError::FailedInstall)?;
         let stdout: String = String::from_utf8_lossy(&output.stdout).into();
+        println!("{}", stdout);
+        println!("{}", String::from_utf8_lossy(&output.stderr));
 
         let version = self
             .parse_installed_version(&stdout)
             .map_err(|_| PackageManagerError::FailedGetVersion)?;
-        println!("{package}: {version}");
         Ok(version)
     }
 }
