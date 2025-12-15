@@ -174,3 +174,12 @@ impl VersionRequirement {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // TODO
+    // tests
+}
+
