@@ -7,6 +7,7 @@ pub enum PackageManagerError {
     FailedInstall,
     FailedUninstall,
     FailedGetVersion,
+    NoVersionFound,
 }
 
 impl fmt::Display for PackageManagerError {
@@ -16,6 +17,7 @@ impl fmt::Display for PackageManagerError {
             PackageManagerError::FailedInstall => write!(f, "Failed to install package"),
             PackageManagerError::FailedUninstall => write!(f, "Failed to uninstall package"),
             PackageManagerError::FailedGetVersion => write!(f, "Failed to get package version"),
+            PackageManagerError::NoVersionFound=> write!(f, "No Package Version was found"),
         }
     }
 }
@@ -144,15 +146,17 @@ impl PackageManager {
         Ok(())
     }
 
-    fn parse_installed_version(&self, input: &str) -> Result<String, PackageManagerError> {
+    fn parse_version(&self, input: &str) -> Option<String> {
         input
             .split_whitespace()
             .find(|word| Version::from(word).is_some())
             .map(|s| s.to_string())
-            .ok_or(PackageManagerError::FailedGetVersion)
     }
 
-    pub fn get_installed_version(&self, package: &str) -> Result<String, PackageManagerError> {
+    pub fn get_installed_version(
+        &self,
+        package: &str,
+    ) -> Result<Option<String>, PackageManagerError> {
         let mut cmd = self.command_prefix();
         cmd.push(self.manager_string());
         cmd.extend(self.config.get_installed_version_flags.iter().copied());
@@ -162,18 +166,18 @@ impl PackageManager {
         let output = std::process::Command::new(cmd[0])
             .args(&cmd[1..])
             .output()
-            .map_err(|_| PackageManagerError::FailedInstall)?;
+            .map_err(|_| PackageManagerError::FailedGetVersion)?;
         let stdout: String = String::from_utf8_lossy(&output.stdout).into();
         println!("{}", stdout);
         println!("{}", String::from_utf8_lossy(&output.stderr));
 
-        let version = self
-            .parse_installed_version(&stdout)
-            .map_err(|_| PackageManagerError::FailedGetVersion)?;
-        Ok(version)
+        Ok(self.parse_version(&stdout))
     }
 
-    pub fn get_available_version(&self, package: &str) -> Result<String, PackageManagerError> {
+    pub fn get_available_version(
+        &self,
+        package: &str,
+    ) -> Result<Option<String>, PackageManagerError> {
         let mut cmd = self.command_prefix();
         cmd.push(self.manager_string());
         cmd.extend(self.config.get_available_version_flags.iter().copied());
@@ -188,10 +192,7 @@ impl PackageManager {
         println!("{}", stdout);
         println!("{}", String::from_utf8_lossy(&output.stderr));
 
-        let version = self
-            .parse_installed_version(&stdout)
-            .map_err(|_| PackageManagerError::FailedGetVersion)?;
-        Ok(version)
+        Ok(self.parse_version(&stdout))
     }
 }
 

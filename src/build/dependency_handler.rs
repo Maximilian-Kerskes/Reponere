@@ -1,6 +1,21 @@
-use crate::build::manager::PackageManager;
-use crate::build::package::Dependencies;
+use crate::build::manager::{PackageManager, PackageManagerError};
+use crate::build::package::{Dependencies, Dependency};
 use version_compare::Version;
+
+pub enum DependencyError {
+    InstallFailed {
+        dependency: String,
+        source: PackageManagerError,
+    },
+    InstalledVersionCheckFailed {
+        dependency: String,
+        source: PackageManagerError,
+    },
+    AvailableVersionCheckFailed {
+        dependency: String,
+        source: PackageManagerError,
+    },
+}
 
 pub struct DependencyHandler {
     package_manager: PackageManager,
@@ -15,27 +30,86 @@ impl DependencyHandler {
         }
     }
 
-    pub fn install_dependencies(&self) {
+    pub fn install_dependencies(&self) -> Result<(), Vec<DependencyError>> {
+        let mut errors = Vec::new();
+
         for dependency in &self.dependencies.build {
-            let should_install = if let Some(version_req) = dependency.version_req.as_ref() {
-                let version_requirement = VersionRequirement::parse_requirement(version_req);
-
-                match self.package_manager.get_installed_version(&dependency.name) {
-                    Ok(installed_version) => {
-                        // Only install if installed version does NOT satisfy the requirement
-                        !version_requirement.matches(&installed_version)
-                    }
-                    Err(_) => true,
-                }
-            } else {
-                true
-            };
-
-            if !should_install {
-                continue;
+            if self.dependency_needs_installing(dependency, &mut errors) {
+                self.install_dependency(dependency, &mut errors);
             }
-            if let Err(e) = self.package_manager.install(&dependency.name) {
-                eprintln!("Failed to install dependency {}: {}", &dependency.name, e);
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
+    }
+
+    fn dependency_needs_installing(
+        &self,
+        dependency: &Dependency,
+        errors: &mut Vec<DependencyError>,
+    ) -> bool {
+        match self.package_manager.get_installed_version(&dependency.name) {
+            Ok(Some(installed_version)) => {
+                self.check_version(&dependency.version_req, &installed_version)
+            }
+            Ok(None) => self.check_not_installed_availability(dependency, errors),
+            Err(e) => {
+                errors.push(DependencyError::InstalledVersionCheckFailed {
+                    dependency: dependency.name.clone(),
+                    source: e,
+                });
+                false
+            }
+        }
+    }
+
+    fn check_version(&self, version_requirement: &Option<String>, installed_version: &str) -> bool {
+        match version_requirement {
+            Some(req) => {
+                let requirement = VersionRequirement::parse_requirement(req);
+                requirement.matches(installed_version)
+            }
+            None => true,
+        }
+    }
+
+    fn check_not_installed_availability(
+        &self,
+        dependency: &Dependency,
+        errors: &mut Vec<DependencyError>,
+    ) -> bool {
+        match self.package_manager.get_available_version(&dependency.name) {
+            Ok(Some(available_version)) => {
+                self.check_version(&dependency.version_req, &available_version)
+            }
+            Ok(None) => {
+                errors.push(DependencyError::AvailableVersionCheckFailed {
+                    dependency: dependency.name.clone(),
+                    source: PackageManagerError::NoVersionFound,
+                });
+                false
+            }
+            Err(e) => {
+                errors.push(DependencyError::AvailableVersionCheckFailed {
+                    dependency: dependency.name.clone(),
+                    source: e,
+                });
+                false
+            }
+        }
+    }
+
+    fn install_dependency(&self, dependency: &Dependency, errors: &mut Vec<DependencyError>) {
+        match self.package_manager.install(&dependency.name) {
+            Ok(()) => {}
+            Err(e) => {
+                errors.push(DependencyError::InstallFailed {
+                    dependency: dependency.name.clone(),
+                    source: e,
+                });
             }
         }
     }
