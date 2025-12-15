@@ -1,4 +1,4 @@
-use std::{path::Path, vec};
+use std::{fmt, path::Path, vec};
 use version_compare::Version;
 
 #[derive(Debug)]
@@ -7,6 +7,17 @@ pub enum PackageManagerError {
     FailedInstall,
     FailedUninstall,
     FailedGetVersion,
+}
+
+impl fmt::Display for PackageManagerError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PackageManagerError::UnknownManager => write!(f, "Unknown package manager"),
+            PackageManagerError::FailedInstall => write!(f, "Failed to install package"),
+            PackageManagerError::FailedUninstall => write!(f, "Failed to uninstall package"),
+            PackageManagerError::FailedGetVersion => write!(f, "Failed to get package version"),
+        }
+    }
 }
 
 struct BackendConfig {
