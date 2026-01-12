@@ -19,8 +19,3 @@ impl PackageParser {
         Ok(package)
     }
 }
-
-mod tests {
-    use super::*;
-
-}
