@@ -6,7 +6,6 @@ source:
   !Git
   repo: "https://github.com/user/mypackage.git"
   tag: "v1.0.0"
-  branch: "main"
 
 dependencies:
   runtime:
