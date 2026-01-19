@@ -11,6 +11,14 @@ pub struct Package {
     pub build: Option<Build>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InstalledPackage {
+    pub name: String,
+    pub version: String,
+    pub install_path: String,
+    pub dependencies: Vec<Dependency>,
+}
+
 // TODO
 // support other sources
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
