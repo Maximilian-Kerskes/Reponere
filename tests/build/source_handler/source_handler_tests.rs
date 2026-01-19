@@ -1,6 +1,8 @@
 mod tests {
-    use reponere::build::package::Source;
-    use reponere::build::source_handler::{GitSource, GitSourceHandler, GitSourceHandlerError};
+    use reponere::build::package::package::Source;
+    use reponere::build::source_handler::source_handler::{
+        GitSource, GitSourceHandler, GitSourceHandlerError,
+    };
 
     #[test]
     fn test_from_source_valid() {

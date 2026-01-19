@@ -1,4 +1,5 @@
-use crate::build::package::InstalledPackage;
+use crate::build::package::package::InstalledPackage;
+
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs};
 use thiserror::Error;

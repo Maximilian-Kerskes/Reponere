@@ -1,5 +1,7 @@
 mod tests {
-    use reponere::{build::manager::PackageManagerApi, mock::mock_manager::MockPackageManager};
+    use reponere::{
+        build::package_manager::manager::PackageManagerApi, mock::mock_manager::MockPackageManager,
+    };
 
     #[test]
     fn test_install_package() {

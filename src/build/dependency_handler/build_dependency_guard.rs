@@ -1,4 +1,4 @@
-use crate::build::manager::PackageManagerApi;
+use crate::build::package_manager::manager::PackageManagerApi;
 
 pub struct BuildDependencyGuard<'a, PM: PackageManagerApi> {
     pub package_manager: &'a PM,

@@ -2,7 +2,7 @@ use git2::{Oid, Repository};
 use tempfile::TempDir;
 use thiserror::Error;
 
-use crate::build::package::Source;
+use crate::build::package::package::Source;
 
 #[derive(Debug, Error)]
 pub enum GitSourceHandlerError {

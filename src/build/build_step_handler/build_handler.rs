@@ -1,7 +1,7 @@
 use std::process::Command;
 use thiserror::Error;
 
-use crate::build::package::Build;
+use crate::build::package::package::Build;
 
 #[derive(Debug, Error)]
 pub enum BuildHandlerError {
