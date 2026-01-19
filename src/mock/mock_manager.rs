@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
-use crate::build::manager::{PackageManagerApi, PackageManagerError};
+use crate::build::package_manager::manager::{PackageManagerApi, PackageManagerError};
 
 pub struct MockPackageManager {
     installed: RefCell<HashMap<String, String>>, // store name -> version

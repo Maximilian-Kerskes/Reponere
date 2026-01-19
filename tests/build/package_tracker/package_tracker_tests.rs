@@ -1,6 +1,6 @@
 mod tests {
-    use reponere::build::package::{Dependency, InstalledPackage};
-    use reponere::build::package_tracker::PackageTracker;
+    use reponere::build::package::package::{Dependency, InstalledPackage};
+    use reponere::build::package_tracker::package_tracker::PackageTracker;
     use tempfile::NamedTempFile;
 
     fn dummy_dependency() -> Dependency {
