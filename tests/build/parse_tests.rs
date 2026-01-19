@@ -13,7 +13,7 @@ mod tests {
             Source::Git {
                 repo: "https://github.com/user/mypackage.git".to_string(),
                 tag: Some("v1.0.0".to_string()),
-                branch: Some("main".to_string()),
+                branch: None,
                 commit: None
             }
         );
