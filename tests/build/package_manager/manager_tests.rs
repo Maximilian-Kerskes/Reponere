@@ -1,5 +1,5 @@
 mod tests {
-    use reponere::build::manager::{PackageManager, PackageManagerApi};
+    use reponere::build::package_manager::manager::{PackageManager, PackageManagerApi};
 
     #[test]
     #[ignore = "requires sudo and modifies system"]

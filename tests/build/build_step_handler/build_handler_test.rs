@@ -1,6 +1,6 @@
 mod tests {
-    use reponere::build::build_handler::{BuildHandler, BuildHandlerError};
-    use reponere::build::package::Build;
+    use reponere::build::build_step_handler::build_handler::{BuildHandler, BuildHandlerError};
+    use reponere::build::package::package::Build;
 
     #[test]
     fn test_run_build_steps_success() {

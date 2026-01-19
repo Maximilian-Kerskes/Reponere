@@ -1,6 +1,6 @@
-use crate::build::manager::{PackageManagerApi, PackageManagerError};
-use crate::build::package::{Dependencies, Dependency};
-use crate::build::version::VersionRequirement;
+use crate::build::package::package::{Dependencies, Dependency};
+use crate::build::dependency_handler::version::VersionRequirement;
+use crate::build::package_manager::manager::{PackageManagerApi, PackageManagerError};
 
 pub enum DependencyError {
     InstallFailed {
