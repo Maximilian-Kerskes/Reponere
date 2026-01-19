@@ -3,6 +3,7 @@ pub mod build_handler;
 pub mod dependency_handler;
 pub mod manager;
 pub mod package;
+pub mod package_tracker;
 pub mod parse;
 pub mod source_handler;
 pub mod version;
