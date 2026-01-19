@@ -1,4 +1,5 @@
 pub mod build_dependency_guard;
+pub mod build_handler;
 pub mod dependency_handler;
 pub mod manager;
 pub mod package;
