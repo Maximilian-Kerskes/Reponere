@@ -1,5 +1,5 @@
 mod tests {
-    use reponere::build::{package::Source, parse::PackageParser};
+    use reponere::build::{package::package::Source, package::parse::PackageParser};
 
     #[test]
     pub fn test_parse() {

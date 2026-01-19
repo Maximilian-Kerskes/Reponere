@@ -1,4 +1,4 @@
-use crate::build::package::*;
+use crate::build::package::package::Package;
 use std::{fs::File, io};
 
 pub struct PackageParser {

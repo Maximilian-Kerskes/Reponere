@@ -1,10 +1,10 @@
 mod tests {
     use reponere::{
         build::{
-            build_dependency_guard::BuildDependencyGuard,
-            dependency_handler::{DependencyError, DependencyHandler},
-            manager::PackageManagerApi,
-            package::{Dependencies, Dependency},
+            dependency_handler::build_dependency_guard::BuildDependencyGuard,
+            dependency_handler::dependency_handler::{DependencyError, DependencyHandler},
+            package::package::{Dependencies, Dependency},
+            package_manager::manager::PackageManagerApi,
         },
         mock::mock_manager::MockPackageManager,
     };

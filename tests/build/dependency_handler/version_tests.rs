@@ -1,5 +1,5 @@
 mod tests {
-    use reponere::build::version::VersionRequirement;
+    use reponere::build::dependency_handler::version::VersionRequirement;
 
     #[test]
     fn test_matches() {
