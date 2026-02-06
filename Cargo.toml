@@ -12,3 +12,4 @@ version-compare = "0.2.1"
 tempfile = "3.24.0"
 thiserror = "2.0.18"
 git2 = "0.20.3"
+clap = { version = "4.5.54", features = ["derive"] }
