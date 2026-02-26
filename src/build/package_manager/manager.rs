@@ -127,8 +127,7 @@ impl PackageManagerApi for PackageManager {
         cmd.push(package);
 
         println!("Running: {cmd:?}");
-        let output = std::process::Command::new(cmd[0])
-            .args(&cmd[1..])
+        let output = std::process::Command::new(cmd[0]) .args(&cmd[1..])
             .output()
             .map_err(|_| PackageManagerError::FailedInstall)?;
         println!("{}", String::from_utf8_lossy(&output.stdout));

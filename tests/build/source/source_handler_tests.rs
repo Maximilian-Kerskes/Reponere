@@ -1,6 +1,6 @@
 mod tests {
     use reponere::build::package::package::Source;
-    use reponere::build::source_handler::source_handler::{
+    use reponere::build::source::source_handler::{
         GitSource, GitSourceHandler, GitSourceHandlerError,
     };
 

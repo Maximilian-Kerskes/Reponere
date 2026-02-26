@@ -3,4 +3,4 @@ pub mod dependency_handler;
 pub mod package;
 pub mod package_manager;
 pub mod package_tracker;
-pub mod source_handler;
+pub mod source;
