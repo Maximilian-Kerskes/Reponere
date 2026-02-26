@@ -60,6 +60,13 @@ impl VersionRequirement {
     }
 }
 
+pub fn is_newer(a: &str, b: &str) -> bool {
+    match (Version::from(a), Version::from(b)) {
+        (Some(v_a), Some(v_b)) => v_a > v_b,
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
