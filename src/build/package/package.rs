@@ -9,9 +9,10 @@ pub struct Package {
     pub source: Source,
     pub dependencies: Dependencies,
     pub build: Option<Build>,
+    pub install_path: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct InstalledPackage {
     pub name: String,
     pub version: String,
@@ -21,7 +22,7 @@ pub struct InstalledPackage {
 
 // TODO
 // support other sources
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum Source {
     Git {
         repo: String,
@@ -31,18 +32,18 @@ pub enum Source {
     },
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Build {
     pub steps: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dependencies {
     pub runtime: Vec<Dependency>,
     pub build: Vec<Dependency>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dependency {
     pub name: String,
     pub version_req: Option<String>,

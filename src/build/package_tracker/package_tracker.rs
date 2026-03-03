@@ -37,11 +37,22 @@ impl PackageTracker {
         self.packages.insert(pkg.name.clone(), pkg);
     }
 
+    pub fn remove_package(&mut self, pkg: &str) {
+        self.packages.remove(pkg);
+    }
+
     pub fn get_package(&self, name: &str) -> Option<&InstalledPackage> {
         self.packages.get(name)
     }
 
     pub fn get_packages(&self) -> &HashMap<String, InstalledPackage> {
         &self.packages
+    }
+
+    pub fn dependency_usage_count(&self, dependency_name: &str) -> usize {
+        self.packages
+            .values()
+            .filter(|pkg| pkg.dependencies.iter().any(|d| d.name == dependency_name))
+            .count()
     }
 }

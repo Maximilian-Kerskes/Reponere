@@ -1,7 +1,12 @@
 mod build;
-mod mock;
 mod cli;
+mod handlers;
+mod util;
+
+use crate::{cli::commands, util::context::Context};
 
 fn main() {
-    println!("Hello, world!");
+    let mut ctx = Context::new().unwrap();
+
+    commands::run(&mut ctx);
 }

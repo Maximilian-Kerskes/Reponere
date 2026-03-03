@@ -14,6 +14,14 @@ pub struct Arg {
 
 #[derive(Subcommand, Debug)]
 pub enum SubArgs {
-    Install { packages: Vec<String> },
-    Uninstall { packages: Vec<String> },
+    Install {
+        #[arg(required = true)]
+        packages: Vec<String>,
+    },
+    Uninstall {
+        #[arg(required = true)]
+        packages: Vec<String>,
+    },
+    Sync,
+    List,
 }

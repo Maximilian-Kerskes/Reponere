@@ -25,3 +25,4 @@ build:
     - "make -j$(nproc)"
     - "make install"
 
+install_path: "/usr/local"

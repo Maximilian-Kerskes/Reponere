@@ -45,7 +45,7 @@ impl<'a> GitSource<'a> {
             }
 
             Ok(Self {
-                repo,
+                repo: repo.as_str(),
                 tag: tag.as_deref(),
                 branch: branch.as_deref(),
                 commit: commit.as_deref(),

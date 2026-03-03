@@ -1,7 +1,7 @@
-use std::process::Command;
+use std::{path::Path, process::Command};
 use thiserror::Error;
 
-use crate::build::package::package::Build;
+use crate::{build::package::package::Build, handlers::install_handler::InstallEvent};
 
 #[derive(Debug, Error)]
 pub enum BuildHandlerError {
@@ -21,13 +21,17 @@ impl BuildHandler {
         BuildHandler { build_steps: build }
     }
 
-    pub fn run_build_steps(&self) -> Result<(), BuildHandlerError> {
+    pub fn run_build_steps<F: FnMut(InstallEvent)>(
+        &self,
+        path: &Path,
+        progress: &mut F,
+    ) -> Result<(), BuildHandlerError> {
         for step in &self.build_steps.steps {
-            println!("Running: '{step}'");
-
+            progress(InstallEvent::BuildStep { step: step.clone() });
             let status = Command::new("sh")
                 .arg("-c")
                 .arg(step)
+                .current_dir(path)
                 .status()
                 .map_err(|e| BuildHandlerError::SpawnError(e))?;
 
