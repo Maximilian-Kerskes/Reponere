@@ -1,4 +1,6 @@
 mod tests {
+    use std::path::Path;
+
     use reponere::build::build_step_handler::build_handler::{BuildHandler, BuildHandlerError};
     use reponere::build::package::package::Build;
 
@@ -9,7 +11,7 @@ mod tests {
         };
         let handler = BuildHandler::new(build);
 
-        let result = handler.run_build_steps();
+        let result = handler.run_build_steps(Path::new("."));
         assert!(result.is_ok());
     }
 
@@ -20,7 +22,7 @@ mod tests {
         };
         let handler = BuildHandler::new(build);
 
-        let result = handler.run_build_steps();
+        let result = handler.run_build_steps(Path::new("."));
         assert!(matches!(result, Err(BuildHandlerError::BuildStepFailed(_))));
     }
 
@@ -31,7 +33,7 @@ mod tests {
         };
         let handler = BuildHandler::new(build);
 
-        let result = handler.run_build_steps();
+        let result = handler.run_build_steps(Path::new("."));
         assert!(result.is_ok());
     }
 }

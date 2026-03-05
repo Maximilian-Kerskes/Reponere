@@ -1,25 +1,22 @@
-use std::{fmt, path::Path, vec};
+use std::{path::Path, vec};
 use version_compare::Version;
 
-#[derive(Debug)]
-pub enum PackageManagerError {
-    UnknownManager,
-    FailedInstall,
-    FailedUninstall,
-    FailedGetVersion,
-    NoVersionFound,
-}
+use thiserror::Error;
 
-impl fmt::Display for PackageManagerError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            PackageManagerError::UnknownManager => write!(f, "Unknown package manager"),
-            PackageManagerError::FailedInstall => write!(f, "Failed to install package"),
-            PackageManagerError::FailedUninstall => write!(f, "Failed to uninstall package"),
-            PackageManagerError::FailedGetVersion => write!(f, "Failed to get package version"),
-            PackageManagerError::NoVersionFound => write!(f, "No Package Version was found"),
-        }
-    }
+#[derive(Debug, Error)]
+pub enum PackageManagerError {
+    #[error("Unknown package manager")]
+    UnknownManager,
+    #[error("Failed to install package: {0}")]
+    FailedInstall(String),
+    #[error("Failed to uninstall package: {0}")]
+    FailedUninstall(String),
+    #[error("Failed to get package version: {0}")]
+    FailedGetVersion(String),
+    #[error("No Package Version was found")]
+    NoVersionFound,
+    #[error("Failed to get reverse dependencies: {0}")]
+    FailedGetReverseDependencies(String),
 }
 
 struct BackendConfig {
@@ -28,6 +25,7 @@ struct BackendConfig {
     uninstall_flags: &'static [&'static str],
     get_installed_version_flags: &'static [&'static str],
     get_available_version_flags: &'static [&'static str],
+    get_reverse_dependency_flags: &'static [&'static str],
 }
 
 const PACMAN_CONFIG: BackendConfig = BackendConfig {
@@ -36,6 +34,7 @@ const PACMAN_CONFIG: BackendConfig = BackendConfig {
     uninstall_flags: &["-R", "--noconfirm"],
     get_installed_version_flags: &["-Q"],
     get_available_version_flags: &["-Si"],
+    get_reverse_dependency_flags: &["-Qi"],
 };
 
 const APT_CONFIG: BackendConfig = BackendConfig {
@@ -46,6 +45,7 @@ const APT_CONFIG: BackendConfig = BackendConfig {
     // check if this is working
     get_installed_version_flags: &["list", "--installed"],
     get_available_version_flags: &["list"],
+    get_reverse_dependency_flags: &["rdepends", "--installed"],
 };
 
 const DNF_CONFIG: BackendConfig = BackendConfig {
@@ -54,6 +54,7 @@ const DNF_CONFIG: BackendConfig = BackendConfig {
     uninstall_flags: &["uninstall", "-y"],
     get_installed_version_flags: &["list", "installed"],
     get_available_version_flags: &["list", "available"],
+    get_reverse_dependency_flags: &["repoquery", "--whatrequires", "--installed"],
 };
 
 #[derive(PartialEq)]
@@ -68,6 +69,7 @@ pub trait PackageManagerApi {
     fn uninstall(&self, package: &str) -> Result<(), PackageManagerError>;
     fn get_installed_version(&self, package: &str) -> Result<Option<String>, PackageManagerError>;
     fn get_available_version(&self, package: &str) -> Result<Option<String>, PackageManagerError>;
+    fn reverse_dependencies(&self, package: &str) -> Result<Vec<String>, PackageManagerError>;
 }
 
 pub struct PackageManager {
@@ -103,38 +105,80 @@ impl PackageManager {
         if self.sudo { vec!["sudo"] } else { vec![] }
     }
 
-    fn manager_string(&self) -> &'static str {
-        match self.kind {
-            ManagerKind::Pacman => "pacman",
-            ManagerKind::Apt => "apt",
-            ManagerKind::Dnf => "dnf",
-        }
-    }
-
     fn parse_version(&self, input: &str) -> Option<String> {
         input
             .split_whitespace()
             .find(|word| Version::from(word).is_some())
             .map(|s| s.to_string())
     }
+
+    fn parse_dependency(&self, input: &str) -> Result<Vec<String>, PackageManagerError> {
+        let mut deps = Vec::new();
+
+        match self.kind {
+            ManagerKind::Pacman => {
+                for line in input.lines() {
+                    if !line.to_ascii_lowercase().starts_with("required by") {
+                        continue;
+                    }
+
+                    let Some(dep_part) = line.splitn(2, ':').nth(1) else {
+                        continue;
+                    };
+
+                    for dep in dep_part.split_whitespace() {
+                        deps.push(dep.to_string());
+                    }
+                }
+            }
+            ManagerKind::Apt => {
+                for line in input.lines() {
+                    let line = line.trim();
+
+                    if !line.to_ascii_lowercase().starts_with("depends") {
+                        continue;
+                    }
+
+                    let Some(dep_part) = line.splitn(2, ':').nth(1) else {
+                        continue;
+                    };
+
+                    let Some(dep) = dep_part.split_whitespace().next() else {
+                        continue;
+                    };
+
+                    deps.push(dep.to_string());
+                }
+            }
+            ManagerKind::Dnf => {
+                for line in input.lines() {
+                    if let Some(dep) = line.split_whitespace().next() {
+                        deps.push(dep.to_string());
+                    }
+                }
+            }
+        }
+
+        Ok(deps)
+    }
 }
 
 impl PackageManagerApi for PackageManager {
     fn install(&self, package: &str) -> Result<(), PackageManagerError> {
         let mut cmd = self.command_prefix();
-        cmd.push(self.manager_string());
+        cmd.push(self.config.cmd);
         cmd.extend(self.config.install_flags.iter().copied());
         cmd.push(package);
 
-        println!("Running: {cmd:?}");
-        let output = std::process::Command::new(cmd[0]) .args(&cmd[1..])
+        let output = std::process::Command::new(cmd[0])
+            .args(&cmd[1..])
             .output()
-            .map_err(|_| PackageManagerError::FailedInstall)?;
-        println!("{}", String::from_utf8_lossy(&output.stdout));
-        println!("{}", String::from_utf8_lossy(&output.stderr));
+            .map_err(|e| PackageManagerError::FailedInstall(e.to_string()))?;
 
         if !output.status.success() {
-            return Err(PackageManagerError::FailedInstall);
+            return Err(PackageManagerError::FailedInstall(
+                String::from_utf8_lossy(&output.stderr).to_string(),
+            ));
         }
 
         Ok(())
@@ -142,20 +186,19 @@ impl PackageManagerApi for PackageManager {
 
     fn uninstall(&self, package: &str) -> Result<(), PackageManagerError> {
         let mut cmd = self.command_prefix();
-        cmd.push(self.manager_string());
+        cmd.push(self.config.cmd);
         cmd.extend(self.config.uninstall_flags.iter().copied());
         cmd.push(package);
 
-        println!("Running: {cmd:?}");
         let output = std::process::Command::new(cmd[0])
             .args(&cmd[1..])
             .output()
-            .map_err(|_| PackageManagerError::FailedInstall)?;
-        println!("{}", String::from_utf8_lossy(&output.stdout));
-        println!("{}", String::from_utf8_lossy(&output.stderr));
+            .map_err(|e| PackageManagerError::FailedUninstall(e.to_string()))?;
 
         if !output.status.success() {
-            return Err(PackageManagerError::FailedInstall);
+            return Err(PackageManagerError::FailedUninstall(
+                String::from_utf8_lossy(&output.stderr).to_string(),
+            ));
         }
 
         Ok(())
@@ -163,38 +206,47 @@ impl PackageManagerApi for PackageManager {
 
     fn get_installed_version(&self, package: &str) -> Result<Option<String>, PackageManagerError> {
         let mut cmd = self.command_prefix();
-        cmd.push(self.manager_string());
+        cmd.push(self.config.cmd);
         cmd.extend(self.config.get_installed_version_flags.iter().copied());
         cmd.push(package);
 
-        println!("Running: {cmd:?}");
         let output = std::process::Command::new(cmd[0])
             .args(&cmd[1..])
             .output()
-            .map_err(|_| PackageManagerError::FailedGetVersion)?;
+            .map_err(|e| PackageManagerError::FailedGetVersion(e.to_string()))?;
         let stdout: String = String::from_utf8_lossy(&output.stdout).into();
-        println!("{}", stdout);
-        println!("{}", String::from_utf8_lossy(&output.stderr));
 
         Ok(self.parse_version(&stdout))
     }
 
     fn get_available_version(&self, package: &str) -> Result<Option<String>, PackageManagerError> {
         let mut cmd = self.command_prefix();
-        cmd.push(self.manager_string());
+        cmd.push(self.config.cmd);
         cmd.extend(self.config.get_available_version_flags.iter().copied());
         cmd.push(package);
 
-        println!("Running: {cmd:?}");
         let output = std::process::Command::new(cmd[0])
             .args(&cmd[1..])
             .output()
-            .map_err(|_| PackageManagerError::FailedInstall)?;
+            .map_err(|e| PackageManagerError::FailedGetVersion(e.to_string()))?;
         let stdout: String = String::from_utf8_lossy(&output.stdout).into();
-        println!("{}", stdout);
-        println!("{}", String::from_utf8_lossy(&output.stderr));
 
         Ok(self.parse_version(&stdout))
+    }
+
+    fn reverse_dependencies(&self, package: &str) -> Result<Vec<String>, PackageManagerError> {
+        let mut cmd = self.command_prefix();
+        cmd.push(self.config.cmd);
+        cmd.extend(self.config.get_reverse_dependency_flags.iter().copied());
+        cmd.push(package);
+
+        let output = std::process::Command::new(cmd[0])
+            .args(&cmd[1..])
+            .output()
+            .map_err(|e| PackageManagerError::FailedGetReverseDependencies(e.to_string()))?;
+        let stdout: String = String::from_utf8_lossy(&output.stdout).into();
+
+        self.parse_dependency(&stdout)
     }
 }
 
@@ -236,5 +288,44 @@ mod tests {
         let version = pm.parse_version(input);
 
         assert_eq!(version, None);
+    }
+
+    #[test]
+    fn test_parse_dependency_pacman_required_by() {
+        let pm = PackageManager::new(ManagerKind::Pacman, false);
+
+        let input = "Name: libfoo\nVersion: 1.0.0\nDepends On: pkg1 pkg2 pkg3";
+
+        let deps = pm.parse_dependency(input).unwrap();
+
+        assert_eq!(deps.len(), 3);
+        assert!(deps.contains(&"pkg1".to_string()));
+        assert!(deps.contains(&"pkg2".to_string()));
+        assert!(deps.contains(&"pkg3".to_string()));
+    }
+
+    #[test]
+    fn test_parse_dependency_apt_depends() {
+        let pm = PackageManager::new(ManagerKind::Apt, false);
+
+        let input = "Package: foo\nDepends: libc6 (>= 2.34), libstdc++6, zlib1g";
+
+        let deps = pm.parse_dependency(input).unwrap();
+
+        assert_eq!(deps.len(), 3);
+        assert!(deps.contains(&"libc6".to_string()));
+        assert!(deps.contains(&"libstdc++6".to_string()));
+        assert!(deps.contains(&"zlib1g".to_string()));
+    }
+
+    #[test]
+    fn test_parse_dependency_empty() {
+        let pm = PackageManager::new(ManagerKind::Pacman, false);
+
+        let input = "Name: foo\n Version: 1.0";
+
+        let deps = pm.parse_dependency(input).unwrap();
+
+        assert!(deps.is_empty());
     }
 }

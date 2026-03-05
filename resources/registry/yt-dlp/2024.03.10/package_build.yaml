@@ -1,0 +1,23 @@
+name: yt-dlp
+version: "2024.03.10"
+description: "A feature-rich command-line video downloader"
+
+source:
+  !Git
+  repo: "https://github.com/yt-dlp/yt-dlp.git"
+  tag: "2024.03.10"
+
+dependencies:
+  runtime:
+    - name: python3
+    - name: ffmpeg
+
+  build:
+    - name: make 
+
+build:
+  steps: 
+    - "make"
+    - "cp yt-dlp ~/.local/bin/yt-dlp"
+
+install_path: ".local/bin/yt-dlp"

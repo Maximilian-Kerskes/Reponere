@@ -5,20 +5,26 @@ use crate::build::dependency_handler::version::is_newer;
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Registry {
     packages: HashMap<String, PackageEntry>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct PackageEntry {
     releases: HashMap<String, Release>,
     latest: String,
 }
 
-#[derive(Serialize, Deserialize)]
-struct Release {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Release {
     build_file: String,
+}
+
+impl Release {
+    pub fn build_file(&self) -> &str {
+        &self.build_file
+    }
 }
 
 impl Registry {
@@ -89,6 +95,17 @@ impl Registry {
                 registry
             }
         }
+    }
+
+    pub fn resolve_release(&self, name: &str, version: Option<&str>) -> Option<&Release> {
+        let package = self.packages.get(name)?;
+
+        let version = match version {
+            Some(version) => version,
+            None => &package.latest,
+        };
+
+        package.releases.get(version)
     }
 }
 

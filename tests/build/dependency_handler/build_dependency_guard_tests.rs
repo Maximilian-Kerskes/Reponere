@@ -1,11 +1,10 @@
 mod tests {
-    use reponere::{
-        build::{
-            dependency_handler::build_dependency_guard::BuildDependencyGuard,
-            package_manager::manager::PackageManagerApi,
-        },
-        mock::mock_manager::MockPackageManager,
+    use reponere::build::{
+        dependency_handler::build_dependency_guard::BuildDependencyGuard,
+        package_manager::manager::PackageManagerApi,
     };
+
+    use crate::build::dependency_handler::dependency_handler_tests::MockPackageManager;
 
     #[test]
     fn test_build_dependency_guard_uninstalls_on_drop() {
