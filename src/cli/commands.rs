@@ -1,4 +1,5 @@
 use crate::{
+    build::registry::registry_handler::Registry,
     cli::args::{Arg, SubArgs},
     handlers::{
         install_handler::{self, InstallEvent, InstallResult},
@@ -18,6 +19,12 @@ pub fn run(ctx: &mut Context) {
         }
         SubArgs::Uninstall { packages } => {
             uninstall(ctx, packages);
+        }
+        SubArgs::Sync => {
+            sync(ctx);
+        }
+        SubArgs::List { packages } => {
+            list(ctx, packages);
         }
         _ => todo!(),
     }
@@ -190,5 +197,28 @@ fn uninstall(ctx: &mut Context, packages: Vec<String>) {
         ctx.tracker
             .save(ctx.config.packages_path.to_str().unwrap())
             .unwrap();
+    }
+}
+
+fn sync(ctx: &mut Context) {
+    println!("==> Syncing registry...");
+    ctx.registry =
+        Registry::resync_from_directory_and_save(&ctx.config.index_path, &ctx.config.registry_path);
+    println!("==> Registry synced");
+}
+
+fn list(ctx: &Context, packages: Vec<String>) {
+    if packages.is_empty() {
+        let packages = ctx.tracker.get_packages();
+        for (name, package) in packages {
+            println!("{} ({})", name, package.version);
+        }
+    } else {
+        for package in packages {
+            match ctx.tracker.get_package(&package) {
+                Some(package) => println!("{} ({})", package.name, package.version),
+                None => println!("{} is not installed", package),
+            }
+        }
     }
 }

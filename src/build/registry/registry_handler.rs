@@ -97,6 +97,12 @@ impl Registry {
         }
     }
 
+    pub fn resync_from_directory_and_save(index: &Path, registry_dir: &Path) -> Self {
+        let registry = Registry::sync_from_directory(registry_dir).unwrap();
+        registry.save_to_file(index).unwrap();
+        registry
+    }
+
     pub fn resolve_release(&self, name: &str, version: Option<&str>) -> Option<&Release> {
         let package = self.packages.get(name)?;
 
@@ -121,7 +127,11 @@ mod tests {
 
         // create sample package structure
         fs::create_dir_all(dir.path().join("mypkg/1.0.0")).unwrap();
-        fs::write(dir.path().join("mypkg/1.0.0/package_build.yaml"), "build: []").unwrap();
+        fs::write(
+            dir.path().join("mypkg/1.0.0/package_build.yaml"),
+            "build: []",
+        )
+        .unwrap();
 
         let registry = Registry::sync_from_directory(dir.path()).unwrap();
 
