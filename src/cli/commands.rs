@@ -201,7 +201,6 @@ fn uninstall(ctx: &mut Context, packages: Vec<String>) {
 }
 
 fn sync(ctx: &mut Context) {
-    println!("==> Syncing registry...");
     ctx.registry =
         Registry::resync_from_directory_and_save(&ctx.config.index_path, &ctx.config.registry_path);
     println!("==> Registry synced");
