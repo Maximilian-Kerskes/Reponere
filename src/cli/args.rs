@@ -23,5 +23,12 @@ pub enum SubArgs {
         packages: Vec<String>,
     },
     Sync,
-    List,
+    List {
+        #[arg(required = false)]
+        packages: Vec<String>,
+
+        #[arg(long)]
+        available: bool,
+    },
+    Show,
 }

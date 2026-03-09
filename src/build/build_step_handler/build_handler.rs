@@ -1,7 +1,7 @@
 use std::{path::Path, process::Command};
 use thiserror::Error;
 
-use crate::{build::package::package::Build, handlers::install_handler::InstallEvent};
+use crate::{build::package::package::Build, handlers::events::InstallEvent};
 
 #[derive(Debug, Error)]
 pub enum BuildHandlerError {
@@ -33,7 +33,7 @@ impl BuildHandler {
                 .arg(step)
                 .current_dir(path)
                 .status()
-                .map_err(|e| BuildHandlerError::SpawnError(e))?;
+                .map_err(BuildHandlerError::SpawnError)?;
 
             if !status.success() {
                 return Err(BuildHandlerError::BuildStepFailed(step.to_string()));

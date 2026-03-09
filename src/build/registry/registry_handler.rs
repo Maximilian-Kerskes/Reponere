@@ -11,9 +11,9 @@ pub struct Registry {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PackageEntry {
+pub struct PackageEntry {
     releases: HashMap<String, Release>,
-    latest: String,
+    pub latest: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -97,6 +97,12 @@ impl Registry {
         }
     }
 
+    pub fn resync_from_directory_and_save(index: &Path, registry_dir: &Path) -> Self {
+        let registry = Registry::sync_from_directory(registry_dir).unwrap();
+        registry.save_to_file(index).unwrap();
+        registry
+    }
+
     pub fn resolve_release(&self, name: &str, version: Option<&str>) -> Option<&Release> {
         let package = self.packages.get(name)?;
 
@@ -106,6 +112,13 @@ impl Registry {
         };
 
         package.releases.get(version)
+    }
+    pub fn get_package(&self, name: &str) -> Option<&PackageEntry> {
+        self.packages.get(name)
+    }
+
+    pub fn get_packages(&self) -> &HashMap<String, PackageEntry> {
+        &self.packages
     }
 }
 
@@ -121,7 +134,11 @@ mod tests {
 
         // create sample package structure
         fs::create_dir_all(dir.path().join("mypkg/1.0.0")).unwrap();
-        fs::write(dir.path().join("mypkg/1.0.0/package_build.yaml"), "build: []").unwrap();
+        fs::write(
+            dir.path().join("mypkg/1.0.0/package_build.yaml"),
+            "build: []",
+        )
+        .unwrap();
 
         let registry = Registry::sync_from_directory(dir.path()).unwrap();
 
