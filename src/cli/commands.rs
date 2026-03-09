@@ -3,6 +3,7 @@ use crate::{
     cli::args::{Arg, SubArgs},
     handlers::{
         install_handler::{self, InstallEvent, InstallResult},
+        list_handler::{self, ListEvent},
         uninstall_handler::{self, UninstallError, UninstallEvent, UninstallPlan},
     },
     util::context::Context,
@@ -23,8 +24,11 @@ pub fn run(ctx: &mut Context) {
         SubArgs::Sync => {
             sync(ctx);
         }
-        SubArgs::List { packages } => {
-            list(ctx, packages);
+        SubArgs::List {
+            packages,
+            available,
+        } => {
+            list(ctx, packages, available);
         }
         _ => todo!(),
     }
@@ -36,10 +40,10 @@ fn show_install_progress(event: InstallEvent) {
             println!("==> Installing dependencies");
         }
         InstallEvent::DependencyAlreadyInstalled { name } => {
-            println!(" -> dependency {name} already installed");
+            println!("-> dependency {name} already installed");
         }
         InstallEvent::InstallingDependency { name } => {
-            println!(" -> installing dependency {name}...");
+            println!("-> installing dependency {name}...");
         }
         InstallEvent::InstallingRunTimeDependencies { dependencies } => {
             println!("==> Installing runtime dependencies: {dependencies:?}");
@@ -54,7 +58,7 @@ fn show_install_progress(event: InstallEvent) {
             println!("==> Building source");
         }
         InstallEvent::BuildStep { step } => {
-            println!(" -> {step}");
+            println!("-> {step}");
         }
         InstallEvent::Cleanup => {
             println!("==> Cleanup");
@@ -71,10 +75,10 @@ fn show_uninstall_progress(event: UninstallEvent) {
             println!("==> Uninstalling dependencies");
         }
         UninstallEvent::UninstallingDependency { name } => {
-            println!(" -> uninstalling dependency {name}...");
+            println!("-> uninstalling dependency {name}...");
         }
         UninstallEvent::DependencyAlreadyUninstalled { name } => {
-            println!(" -> dependency {name} already uninstalled");
+            println!("-> dependency {name} already uninstalled");
         }
         UninstallEvent::RemovingPackageFiles => {
             println!("==> Removing package files");
@@ -84,6 +88,23 @@ fn show_uninstall_progress(event: UninstallEvent) {
         }
         UninstallEvent::Finished => {
             println!("==> Finished");
+        }
+    }
+}
+
+fn show_list_progress(event: ListEvent) {
+    match event {
+        ListEvent::Available => {
+            println!("==> Available packages:");
+        }
+        ListEvent::AvailablePackage(name, version) => {
+            println!("-> {name}: {version}");
+        }
+        ListEvent::Installed => {
+            println!("==> Installed packages:");
+        }
+        ListEvent::InstalledPackage(name, version) => {
+            println!("-> {name}: {version}");
         }
     }
 }
@@ -206,18 +227,9 @@ fn sync(ctx: &mut Context) {
     println!("==> Registry synced");
 }
 
-fn list(ctx: &Context, packages: Vec<String>) {
-    if packages.is_empty() {
-        let packages = ctx.tracker.get_packages();
-        for (name, package) in packages {
-            println!("{} ({})", name, package.version);
-        }
-    } else {
-        for package in packages {
-            match ctx.tracker.get_package(&package) {
-                Some(package) => println!("{} ({})", package.name, package.version),
-                None => println!("{} is not installed", package),
-            }
-        }
+fn list(ctx: &Context, packages: Vec<String>, available: bool) {
+    match list_handler::run(ctx, packages, available, &mut show_list_progress) {
+        Ok(()) => (),
+        Err(e) => println!("==> something went wrong: {e}"),
     }
 }

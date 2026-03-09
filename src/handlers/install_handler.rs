@@ -4,7 +4,7 @@ use crate::build::{
         build_dependency_guard::BuildDependencyGuard, dependency_handler::DependencyHandler,
     },
     package::{
-        package::{Dependency, InstalledPackage, Package},
+        package::{InstalledPackage, Package},
         parse::PackageParser,
     },
     package_manager::manager::PackageManager,

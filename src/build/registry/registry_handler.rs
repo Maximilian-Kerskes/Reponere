@@ -11,9 +11,9 @@ pub struct Registry {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PackageEntry {
+pub struct PackageEntry {
     releases: HashMap<String, Release>,
-    latest: String,
+    pub latest: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -112,6 +112,13 @@ impl Registry {
         };
 
         package.releases.get(version)
+    }
+    pub fn get_package(&self, name: &str) -> Option<&PackageEntry> {
+        self.packages.get(name)
+    }
+
+    pub fn get_packages(&self) -> &HashMap<String, PackageEntry> {
+        &self.packages
     }
 }
 
