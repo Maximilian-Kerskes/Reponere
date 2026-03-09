@@ -12,7 +12,7 @@ pub struct Registry {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PackageEntry {
-    releases: HashMap<String, Release>,
+    pub releases: HashMap<String, Release>,
     pub latest: String,
 }
 

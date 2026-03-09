@@ -82,8 +82,13 @@ fn check_already_installed(package: &str, tracker: &PackageTracker) -> bool {
 }
 
 fn resolve_release<'a>(package: &str, reg: &'a Registry) -> Result<&'a Release, InstallError> {
-    reg.resolve_release(package, None)
-        .ok_or(InstallError::ReleaseNotFound(package.to_string()))
+    if let Some(package) = package.split_once('@') {
+        reg.resolve_release(package.0, Some(package.1))
+            .ok_or(InstallError::ReleaseNotFound(package.0.to_string()))
+    } else {
+        reg.resolve_release(package, None)
+            .ok_or(InstallError::ReleaseNotFound(package.to_string()))
+    }
 }
 
 fn parse_package(release: &Release) -> Result<Package, InstallError> {
