@@ -33,7 +33,7 @@ impl BuildHandler {
                 .arg(step)
                 .current_dir(path)
                 .status()
-                .map_err(|e| BuildHandlerError::SpawnError(e))?;
+                .map_err(BuildHandlerError::SpawnError)?;
 
             if !status.success() {
                 return Err(BuildHandlerError::BuildStepFailed(step.to_string()));

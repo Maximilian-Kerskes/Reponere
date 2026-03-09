@@ -12,7 +12,8 @@ use crate::{
         package_tracker::package_tracker::PackageTracker,
         registry::registry_handler::{Registry, Release},
         source::source_handler::{GitSource, GitSourceHandler},
-    }, handlers::events::InstallEvent,
+    },
+    handlers::events::InstallEvent,
 };
 use tempfile::TempDir;
 use thiserror::Error;
