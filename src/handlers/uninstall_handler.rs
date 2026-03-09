@@ -1,9 +1,12 @@
 use std::{fs, path::Path};
 
-use crate::build::{
-    package::package::{Dependency, InstalledPackage},
-    package_manager::manager::{PackageManager, PackageManagerApi},
-    package_tracker::package_tracker::PackageTracker,
+use crate::{
+    build::{
+        package::package::{Dependency, InstalledPackage},
+        package_manager::manager::{PackageManager, PackageManagerApi},
+        package_tracker::package_tracker::PackageTracker,
+    },
+    handlers::events::UninstallEvent,
 };
 use thiserror::Error;
 
@@ -15,15 +18,6 @@ pub enum UninstallError {
     PackageManagerError(String),
     #[error("io error: {0}")]
     Io(std::io::Error),
-}
-
-pub enum UninstallEvent {
-    UninstallingDependencies,
-    UninstallingDependency { name: String },
-    DependencyAlreadyUninstalled { name: String },
-    RemovingPackageFiles,
-    Cleanup,
-    Finished,
 }
 
 #[derive(Debug, Default)]

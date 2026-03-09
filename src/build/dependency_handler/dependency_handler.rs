@@ -3,7 +3,7 @@ use std::fmt;
 use crate::build::dependency_handler::version::VersionRequirement;
 use crate::build::package::package::{Dependencies, Dependency};
 use crate::build::package_manager::manager::{PackageManagerApi, PackageManagerError};
-use crate::handlers::install_handler::InstallEvent;
+use crate::handlers::events::InstallEvent;
 
 pub enum DependencyError {
     InstallFailed {

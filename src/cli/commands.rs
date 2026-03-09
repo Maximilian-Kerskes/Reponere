@@ -1,10 +1,13 @@
 use crate::{
     build::registry::registry_handler::Registry,
-    cli::args::{Arg, SubArgs},
+    cli::{
+        args::{Arg, SubArgs},
+        presenter::Presenter,
+    },
     handlers::{
-        install_handler::{self, InstallEvent, InstallResult},
-        list_handler::{self, ListEvent},
-        uninstall_handler::{self, UninstallError, UninstallEvent, UninstallPlan},
+        install_handler::{self, InstallResult},
+        list_handler::{self},
+        uninstall_handler::{self, UninstallError, UninstallPlan},
     },
     util::context::Context,
 };
@@ -34,82 +37,9 @@ pub fn run(ctx: &mut Context) {
     }
 }
 
-fn show_install_progress(event: InstallEvent) {
-    match event {
-        InstallEvent::InstallingDependencies => {
-            println!("==> Installing dependencies");
-        }
-        InstallEvent::DependencyAlreadyInstalled { name } => {
-            println!("-> dependency {name} already installed");
-        }
-        InstallEvent::InstallingDependency { name } => {
-            println!("-> installing dependency {name}...");
-        }
-        InstallEvent::InstallingRunTimeDependencies { dependencies } => {
-            println!("==> Installing runtime dependencies: {dependencies:?}");
-        }
-        InstallEvent::InstallingBuildDependencies { dependencies } => {
-            println!("==> Installing build dependencies: {dependencies:?}");
-        }
-        InstallEvent::FetchingSource => {
-            println!("==> Fetching source");
-        }
-        InstallEvent::BuildingSource => {
-            println!("==> Building source");
-        }
-        InstallEvent::BuildStep { step } => {
-            println!("-> {step}");
-        }
-        InstallEvent::Cleanup => {
-            println!("==> Cleanup");
-        }
-        InstallEvent::Finished => {
-            println!("==> Finished");
-        }
-    }
-}
-
-fn show_uninstall_progress(event: UninstallEvent) {
-    match event {
-        UninstallEvent::UninstallingDependencies => {
-            println!("==> Uninstalling dependencies");
-        }
-        UninstallEvent::UninstallingDependency { name } => {
-            println!("-> uninstalling dependency {name}...");
-        }
-        UninstallEvent::DependencyAlreadyUninstalled { name } => {
-            println!("-> dependency {name} already uninstalled");
-        }
-        UninstallEvent::RemovingPackageFiles => {
-            println!("==> Removing package files");
-        }
-        UninstallEvent::Cleanup => {
-            println!("==> Cleanup");
-        }
-        UninstallEvent::Finished => {
-            println!("==> Finished");
-        }
-    }
-}
-
-fn show_list_progress(event: ListEvent) {
-    match event {
-        ListEvent::Available => {
-            println!("==> Available packages:");
-        }
-        ListEvent::AvailablePackage(name, version) => {
-            println!("-> {name}: {version}");
-        }
-        ListEvent::Installed => {
-            println!("==> Installed packages:");
-        }
-        ListEvent::InstalledPackage(name, version) => {
-            println!("-> {name}: {version}");
-        }
-    }
-}
-
 fn install(ctx: &mut Context, packages: Vec<String>) {
+    let mut presenter = |event| Presenter::display(&event);
+
     if !Confirm::new()
         .with_prompt(format!(
             "Do you want to install the following packages?\n - {}",
@@ -128,7 +58,7 @@ fn install(ctx: &mut Context, packages: Vec<String>) {
             &mut ctx.tracker,
             &package,
             false,
-            &mut show_install_progress,
+            &mut presenter,
         ) {
             Ok(InstallResult::Installed) => {
                 println!("==> Installed {package}");
@@ -149,7 +79,7 @@ fn install(ctx: &mut Context, packages: Vec<String>) {
                     &mut ctx.tracker,
                     &package,
                     true,
-                    &mut show_install_progress,
+                    &mut presenter,
                 ) {
                     Ok(_) => println!("==> Reinstalled {package}"),
                     Err(e) => println!("==> Failed to reinstall {package}: {e}"),
@@ -167,6 +97,8 @@ fn install(ctx: &mut Context, packages: Vec<String>) {
 }
 
 fn uninstall(ctx: &mut Context, packages: Vec<String>) {
+    let mut presenter = |event| Presenter::display(&event);
+
     if !Confirm::new()
         .with_prompt(format!(
             "Do you want to uninstall the following packages?\n - {}",
@@ -210,7 +142,7 @@ fn uninstall(ctx: &mut Context, packages: Vec<String>) {
             .interact()
             .unwrap()
         {
-            match uninstall_handler::execute(&mut ctx.tracker, plan, &mut show_uninstall_progress) {
+            match uninstall_handler::execute(&mut ctx.tracker, plan, &mut presenter) {
                 Ok(_) => println!("==> Uninstalled {package}"),
                 Err(e) => println!("==> Failed to uninstall {package}: {e}"),
             };
@@ -228,7 +160,9 @@ fn sync(ctx: &mut Context) {
 }
 
 fn list(ctx: &Context, packages: Vec<String>, available: bool) {
-    match list_handler::run(ctx, packages, available, &mut show_list_progress) {
+    let mut presenter = |event| Presenter::display(&event);
+
+    match list_handler::run(ctx, packages, available, &mut presenter) {
         Ok(()) => (),
         Err(e) => println!("==> something went wrong: {e}"),
     }

@@ -1,16 +1,18 @@
-use crate::build::{
-    build_step_handler::build_handler::BuildHandler,
-    dependency_handler::{
-        build_dependency_guard::BuildDependencyGuard, dependency_handler::DependencyHandler,
-    },
-    package::{
-        package::{InstalledPackage, Package},
-        parse::PackageParser,
-    },
-    package_manager::manager::PackageManager,
-    package_tracker::package_tracker::PackageTracker,
-    registry::registry_handler::{Registry, Release},
-    source::source_handler::{GitSource, GitSourceHandler},
+use crate::{
+    build::{
+        build_step_handler::build_handler::BuildHandler,
+        dependency_handler::{
+            build_dependency_guard::BuildDependencyGuard, dependency_handler::DependencyHandler,
+        },
+        package::{
+            package::{InstalledPackage, Package},
+            parse::PackageParser,
+        },
+        package_manager::manager::PackageManager,
+        package_tracker::package_tracker::PackageTracker,
+        registry::registry_handler::{Registry, Release},
+        source::source_handler::{GitSource, GitSourceHandler},
+    }, handlers::events::InstallEvent,
 };
 use tempfile::TempDir;
 use thiserror::Error;
@@ -36,19 +38,6 @@ pub enum InstallError {
     SourceFetchError(String),
     #[error("build error: {0}")]
     BuildError(String),
-}
-
-pub enum InstallEvent {
-    InstallingDependencies,
-    InstallingRunTimeDependencies { dependencies: Vec<String> },
-    InstallingBuildDependencies { dependencies: Vec<String> },
-    InstallingDependency { name: String },
-    DependencyAlreadyInstalled { name: String },
-    FetchingSource,
-    BuildingSource,
-    BuildStep { step: String },
-    Cleanup,
-    Finished,
 }
 
 pub fn run<F: FnMut(InstallEvent)>(

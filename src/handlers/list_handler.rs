@@ -1,4 +1,4 @@
-use crate::util::context::Context;
+use crate::{handlers::events::ListEvent, util::context::Context};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -7,12 +7,6 @@ pub enum ListError {
     PackageNotFound(String),
 }
 
-pub enum ListEvent {
-    Available,
-    AvailablePackage(String, String),
-    Installed,
-    InstalledPackage(String, String),
-}
 
 pub fn run<F: FnMut(ListEvent)>(
     ctx: &Context,
