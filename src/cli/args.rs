@@ -30,5 +30,8 @@ pub enum SubArgs {
         #[arg(long)]
         available: bool,
     },
-    Show,
+    Show {
+        #[arg(required = true)]
+        package: String,
+    },
 }

@@ -7,6 +7,7 @@ use crate::{
     handlers::{
         install_handler::{self, InstallResult},
         list_handler::{self},
+        show_handler,
         uninstall_handler::{self, UninstallError, UninstallPlan},
     },
     util::context::Context,
@@ -32,6 +33,9 @@ pub fn run(ctx: &mut Context) {
             available,
         } => {
             list(ctx, packages, available);
+        }
+        SubArgs::Show { package } => {
+            show(ctx, &package);
         }
         _ => todo!(),
     }
@@ -166,4 +170,10 @@ fn list(ctx: &Context, packages: Vec<String>, available: bool) {
         Ok(()) => (),
         Err(e) => println!("==> something went wrong: {e}"),
     }
+}
+
+fn show(ctx: &Context, package_name: &str) {
+    let mut presenter = |event| Presenter::display(&event);
+
+    show_handler::run(ctx, package_name, &mut presenter);
 }
