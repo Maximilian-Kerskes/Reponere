@@ -14,6 +14,9 @@ pub struct Config {
 impl Config {
     fn create_default() -> Result<String, Box<dyn std::error::Error>> {
         let home = dirs::home_dir().expect("Unable to get home directory");
+        let config_dir = home.join(".config/reponere");
+        fs::create_dir_all(&config_dir)?;
+
         let config = Config {
             index_path: home.join(".config/reponere/index.json"),
             registry_path: home.join(".config/reponere/registry"),
