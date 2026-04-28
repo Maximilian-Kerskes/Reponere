@@ -22,6 +22,10 @@ pub enum SubArgs {
         #[arg(required = true)]
         packages: Vec<String>,
     },
+    Update {
+        #[arg(required = false)]
+        packages: Vec<String>,
+    },
     Sync,
     List {
         #[arg(required = false)]

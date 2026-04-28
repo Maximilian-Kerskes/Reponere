@@ -54,7 +54,7 @@ impl PackageManagerApi for MockPackageManager {
         Ok(self.available.borrow().get(package).cloned())
     }
 
-    fn reverse_dependencies(&self, package: &str) -> Result<Vec<String>, PackageManagerError> {
+    fn reverse_dependencies(&self, _package: &str) -> Result<Vec<String>, PackageManagerError> {
         Ok(Vec::new())
     }
 }
@@ -87,7 +87,8 @@ mod tests {
         let handler = DependencyHandler::new(&mock_pm, deps);
 
         let mut errors = Vec::new();
-        handler.install_runtime_dependencies(&mut errors);
+        let mut progress = |_| {};
+        handler.install_runtime_dependencies(&mut errors, &mut progress);
 
         assert!(errors.is_empty());
         // install method inserts "foo", but get_installed_version expects "foo@version"
@@ -107,7 +108,8 @@ mod tests {
         let handler = DependencyHandler::new(&mock_pm, deps);
 
         let mut errors = Vec::new();
-        let installed = handler.install_build_dependencies(&mut errors);
+        let mut progress = |_| {};
+        let installed = handler.install_build_dependencies(&mut errors, &mut progress);
 
         assert_eq!(installed, vec!["bar".to_string()]);
         assert!(errors.is_empty());
@@ -126,7 +128,8 @@ mod tests {
         let handler = DependencyHandler::new(&mock_pm, deps);
 
         let mut errors = Vec::new();
-        handler.install_runtime_dependencies(&mut errors);
+        let mut progress = |_| {};
+        handler.install_runtime_dependencies(&mut errors, &mut progress);
 
         assert_eq!(errors.len(), 1);
         match &errors[0] {
@@ -147,7 +150,8 @@ mod tests {
         let handler = DependencyHandler::new(&mock_pm, deps);
 
         let mut errors = Vec::new();
-        handler.install_runtime_dependencies(&mut errors);
+        let mut progress = |_| {};
+        handler.install_runtime_dependencies(&mut errors, &mut progress);
 
         assert!(errors.is_empty());
         let installed_version = mock_pm.get_installed_version("foo").unwrap();

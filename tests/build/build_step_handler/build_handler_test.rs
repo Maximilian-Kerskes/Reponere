@@ -10,8 +10,9 @@ mod tests {
             steps: vec!["echo hello".to_string()],
         };
         let handler = BuildHandler::new(build);
+        let mut progress = |_| {};
 
-        let result = handler.run_build_steps(Path::new("."));
+        let result = handler.run_build_steps(Path::new("."), &mut progress);
         assert!(result.is_ok());
     }
 
@@ -21,8 +22,9 @@ mod tests {
             steps: vec!["false".to_string()],
         };
         let handler = BuildHandler::new(build);
+        let mut progress = |_| {};
 
-        let result = handler.run_build_steps(Path::new("."));
+        let result = handler.run_build_steps(Path::new("."), &mut progress);
         assert!(matches!(result, Err(BuildHandlerError::BuildStepFailed(_))));
     }
 
@@ -32,8 +34,9 @@ mod tests {
             steps: vec!["echo step1".to_string(), "echo step2".to_string()],
         };
         let handler = BuildHandler::new(build);
+        let mut progress = |_| {};
 
-        let result = handler.run_build_steps(Path::new("."));
+        let result = handler.run_build_steps(Path::new("."), &mut progress);
         assert!(result.is_ok());
     }
 }
